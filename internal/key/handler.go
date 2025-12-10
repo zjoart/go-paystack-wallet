@@ -38,8 +38,8 @@ func (h *Handler) CreateAPIKey(w http.ResponseWriter, r *http.Request) {
 	usr := r.Context().Value(utils.UserKey).(user.User)
 
 	var req CreateKeyRequest
-	if err := utils.DecodeJSONBody(w, r, &req); err != nil {
-		utils.BuildErrorResponse(w, http.StatusBadRequest, "Invalid request body", map[string]string{"error": err.Error()})
+	if status, err := utils.DecodeJSONBody(w, r, &req); err != nil {
+		utils.BuildErrorResponse(w, status, "Invalid request body", map[string]string{"error": err.Error()})
 		return
 	}
 
@@ -94,8 +94,8 @@ func (h *Handler) RolloverAPIKey(w http.ResponseWriter, r *http.Request) {
 	usr := r.Context().Value(utils.UserKey).(user.User)
 
 	var req RolloverKeyRequest
-	if err := utils.DecodeJSONBody(w, r, &req); err != nil {
-		utils.BuildErrorResponse(w, http.StatusBadRequest, "Invalid request body", map[string]string{"error": err.Error()})
+	if status, err := utils.DecodeJSONBody(w, r, &req); err != nil {
+		utils.BuildErrorResponse(w, status, "Invalid request body", map[string]string{"error": err.Error()})
 		return
 	}
 

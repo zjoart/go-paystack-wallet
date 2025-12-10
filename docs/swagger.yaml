@@ -89,6 +89,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+        '415':
+          description: Unsupported Media Type (Content-Type must be application/json)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         '500':
           description: Internal Server Error
           content:
@@ -136,11 +142,259 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /api/wallet/create:
+    post:
+      summary: Create a Wallet
+      description: Create a wallet for the authenticated user. Requires checks for existing wallet.
+      tags:
+        - Wallet
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - pin
+              properties:
+                pin:
+                  type: string
+                  description: 4-digit numeric PIN
+                  example: "1234"
+      responses:
+        201:
+          description: Wallet created
+          schema:
+            $ref: '#/definitions/SuccessResponse'
+        400:
+          description: Invalid Request (e.g., bad PIN)
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        409:
+          description: User already has a wallet
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        415:
+          description: Unsupported Media Type
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        500:
+          description: Server Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+
+  /api/wallet/deposit:
+    post:
+      summary: Initialize Deposit (Paystack)
+      description: Initialize a deposit transaction via Paystack. Returns authorization URL.
+      tags:
+        - Wallet
+      security:
+        - BearerAuth: []
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - amount
+              properties:
+                amount:
+                  type: integer
+                  description: Amount in Kobo (Min: {{MIN_TRANSACTION_AMOUNT}})
+                  example: 10000
+      responses:
+        200:
+          description: Paystack Initialization Successful
+          schema:
+            $ref: '#/definitions/SuccessResponse'
+        415:
+          description: Unsupported Media Type
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        500:
+          description: Paystack Error
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+  /api/wallet/deposit/{reference}/status:
+    get:
+      summary: Get Deposit Status
+      description: Check status of a specific deposit transaction.
+      tags:
+        - Wallet
+      security:
+        - BearerAuth: []
+        - ApiKeyAuth: []
+      parameters:
+        - in: path
+          name: reference
+          required: true
+          schema:
+            type: string
+          description: Transaction Reference
+      responses:
+        200:
+          description: Status Retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/definitions/SuccessResponse'
+        404:
+          description: Transaction not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/definitions/ErrorResponse'
+
+  /api/wallet/transfer:
+    post:
+      summary: Transfer Funds
+      description: Transfer funds to another wallet. Atomic transaction.
+      tags:
+        - Wallet
+      security:
+        - BearerAuth: []
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - wallet_number
+                - amount
+                - pin
+              properties:
+                wallet_number:
+                  type: string
+                  description: Recipient Wallet Number
+                  example: "0123456789"
+                amount:
+                  type: integer
+                  description: Amount in Kobo (Min: {{MIN_TRANSACTION_AMOUNT}})
+                  example: 10000
+                pin:
+                  type: string
+                  description: Sender's 4-digit PIN
+                  example: "1234"
+                description:
+                  type: string
+                  description: Optional transaction note
+                  example: "Payment for goods"
+      responses:
+        200:
+          description: Transfer Successful
+          schema:
+            $ref: '#/definitions/SuccessResponse'
+        400:
+          description: Bad Request (Invalid PIN, Insufficient Balance)
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        404:
+          description: Wallet not found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        415:
+          description: Unsupported Media Type
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+        500:
+          description: Transfer Failed
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+
+  /api/wallet:
+    get:
+      summary: Get Wallet Details
+      description: Retrieve full wallet details including ID and UserID.
+      tags:
+        - Wallet
+      security:
+        - BearerAuth: []
+        - ApiKeyAuth: []
+      responses:
+        200:
+          description: Wallet Details Retrieved
+          schema:
+            $ref: '#/definitions/SuccessResponse'
+        404:
+          description: Wallet not found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+
+  /api/wallet/balance:
+    get:
+      summary: Get Wallet Balance
+      description: Retrieve current wallet balance.
+      tags:
+        - Wallet
+      security:
+        - BearerAuth: []
+        - ApiKeyAuth: []
+      responses:
+        200:
+          description: Balance Retrieved
+          schema:
+            $ref: '#/definitions/SuccessResponse'
+        404:
+          description: Wallet not found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+
+  /api/wallet/transactions:
+    get:
+      summary: Get Transaction History
+      description: Retrieve paginated transaction history.
+      tags:
+        - Wallet
+      security:
+        - BearerAuth: []
+        - ApiKeyAuth: []
+      parameters:
+        - in: query
+          name: limit
+          type: integer
+          default: 10
+        - in: query
+          name: page
+          type: integer
+          default: 1
+      responses:
+        200:
+          description: History Retrieved
+          schema:
+            $ref: '#/definitions/SuccessResponse'
+        404:
+          description: Wallet not found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+
+  /api/wallet/paystack/webhook:
+    post:
+      summary: Paystack Webhook
+      description: Public endpoint for Paystack events. Verifies signature.
+      tags:
+        - Wallet
+      responses:
+        200:
+          description: Event Processed
+        401:
+          description: Invalid Signature
+
 components:
   securitySchemes:
     BearerAuth:
       type: apiKey
       name: Authorization
+      in: header
+    ApiKeyAuth:
+      type: apiKey
+      name: x-api-key
       in: header
 
   schemas:
@@ -153,6 +407,19 @@ components:
         message:
           type: string
           example: Error description
+        data:
+          type: object
+          nullable: true
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Operation successful
         data:
           type: object
           nullable: true
@@ -226,7 +493,7 @@ components:
         expiry:
           type: string
           enum: [1H, 1D, 1M, 1Y]
-
+    
     KeyResponse:
       type: object
       properties:

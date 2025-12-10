@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 	"strings"
@@ -12,6 +13,7 @@ import (
 	"github.com/zjoart/go-paystack-wallet/internal/key"
 	"github.com/zjoart/go-paystack-wallet/internal/middleware"
 	"github.com/zjoart/go-paystack-wallet/internal/user"
+	"github.com/zjoart/go-paystack-wallet/internal/wallet"
 	"github.com/zjoart/go-paystack-wallet/pkg/config"
 	"github.com/zjoart/go-paystack-wallet/pkg/database"
 	"github.com/zjoart/go-paystack-wallet/pkg/logger"
@@ -35,6 +37,26 @@ func RegisterRoutes(r *mux.Router, cfg config.Config) http.Handler {
 	keysR.HandleFunc("/create", keyHandler.CreateAPIKey).Methods("POST")
 	keysR.HandleFunc("/rollover", keyHandler.RolloverAPIKey).Methods("POST")
 
+	walletRepo := wallet.NewRepository(database.DB)
+	walletHandler := wallet.NewHandler(cfg, walletRepo)
+
+	walletR := r.PathPrefix("/api/wallet").Subrouter()
+
+	walletR.HandleFunc("/paystack/webhook", walletHandler.PaystackWebhook).Methods("POST")
+
+	createR := walletR.PathPrefix("/create").Subrouter()
+	createR.Use(auth.JWTMiddleware(cfg, userRepo))
+	createR.HandleFunc("", walletHandler.CreateWallet).Methods("POST")
+
+	opsR := walletR.PathPrefix("").Subrouter()
+	opsR.Use(auth.UnifiedAuthMiddleware(cfg, userRepo, keyRepo))
+	opsR.HandleFunc("", walletHandler.GetWallet).Methods("GET")
+	opsR.HandleFunc("/deposit", walletHandler.WalletDeposit).Methods("POST")
+	opsR.HandleFunc("/deposit/{reference}/status", walletHandler.GetDepositStatus).Methods("GET")
+	opsR.HandleFunc("/transfer", walletHandler.TransferFunds).Methods("POST")
+	opsR.HandleFunc("/balance", walletHandler.GetWalletBalance).Methods("GET")
+	opsR.HandleFunc("/transactions", walletHandler.GetTransactions).Methods("GET")
+
 	if cfg.Env != "production" {
 
 		r.HandleFunc("/swagger.yaml", func(w http.ResponseWriter, r *http.Request) {
@@ -47,6 +69,7 @@ func RegisterRoutes(r *mux.Router, cfg config.Config) http.Handler {
 
 			baseURL := "/"
 			modifiedContent := strings.Replace(string(content), "{{BASE_URL}}", baseURL, -1)
+			modifiedContent = strings.Replace(modifiedContent, "{{MIN_TRANSACTION_AMOUNT}}", fmt.Sprintf("%d", cfg.MinTransactionAmount), -1)
 
 			w.Header().Set("Content-Type", "application/yaml")
 			w.Write([]byte(modifiedContent))
