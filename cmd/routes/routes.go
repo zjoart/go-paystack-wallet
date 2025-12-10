@@ -16,11 +16,12 @@ import (
 	"github.com/zjoart/go-paystack-wallet/internal/wallet"
 	"github.com/zjoart/go-paystack-wallet/pkg/config"
 	"github.com/zjoart/go-paystack-wallet/pkg/database"
+	"github.com/zjoart/go-paystack-wallet/pkg/events"
 	"github.com/zjoart/go-paystack-wallet/pkg/logger"
 	"github.com/zjoart/go-paystack-wallet/pkg/utils"
 )
 
-func RegisterRoutes(r *mux.Router, cfg config.Config) http.Handler {
+func RegisterRoutes(r *mux.Router, cfg config.Config, redisClient *events.RedisClient, walletRepo wallet.Repository) http.Handler {
 	userRepo := user.NewRepository(database.DB)
 	keyRepo := key.NewRepository(database.DB)
 
@@ -33,19 +34,18 @@ func RegisterRoutes(r *mux.Router, cfg config.Config) http.Handler {
 		utils.BuildSuccessResponse(w, http.StatusOK, "Service is running", nil)
 	}).Methods("GET")
 
-	authR := r.PathPrefix("/api/auth").Subrouter()
+	authR := r.PathPrefix("/auth").Subrouter()
 	authR.HandleFunc("/google", authHandler.GoogleLogin).Methods("GET")
 	authR.HandleFunc("/google/callback", authHandler.GoogleCallback).Methods("GET")
 
-	keysR := r.PathPrefix("/api/keys").Subrouter()
+	keysR := r.PathPrefix("/keys").Subrouter()
 	keysR.Use(auth.JWTMiddleware(cfg, userRepo))
 	keysR.HandleFunc("/create", keyHandler.CreateAPIKey).Methods("POST")
 	keysR.HandleFunc("/rollover", keyHandler.RolloverAPIKey).Methods("POST")
 
-	walletRepo := wallet.NewRepository(database.DB)
-	walletHandler := wallet.NewHandler(cfg, walletRepo)
+	walletHandler := wallet.NewHandler(cfg, walletRepo, redisClient)
 
-	walletR := r.PathPrefix("/api/wallet").Subrouter()
+	walletR := r.PathPrefix("/wallet").Subrouter()
 
 	walletR.HandleFunc("/paystack/webhook", walletHandler.PaystackWebhook).Methods("POST")
 

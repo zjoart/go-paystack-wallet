@@ -21,7 +21,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
 
-  /api/auth/google:
+  /auth/google:
     get:
       summary: Initiate Google Login
       description: |
@@ -29,14 +29,14 @@ paths:
         
         **Note:** properties "Failed to fetch" in Swagger UI is expected due to Google's CORS policy blocking AJAX redirects.
         
-        👉 [**Click here to Login with Google**](/api/auth/google)
+        👉 [**Click here to Login with Google**](/auth/google)
       tags:
         - Auth
       responses:
         '307':
           description: Temporary Redirect to Google
 
-  /api/auth/google/callback:
+  /auth/google/callback:
     get:
       summary: Google Login Callback
       description: Handle Google OAuth2 callback, create user if not exists, and return JWT
@@ -69,7 +69,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /api/keys/create:
+  /keys/create:
     post:
       summary: Create API Key
       description: Create a new API key for the authenticated user
@@ -115,7 +115,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /api/keys/rollover:
+  /keys/rollover:
     post:
       summary: Rollover API Key
       description: Replace an expired API key with a new one
@@ -155,7 +155,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-  /api/wallet/create:
+  /wallet/create:
     post:
       summary: Create a Wallet
       description: Create a wallet for the authenticated user. Requires checks for existing wallet.
@@ -198,7 +198,7 @@ paths:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
 
-  /api/wallet/deposit:
+  /wallet/deposit:
     post:
       summary: Initialize Deposit (Paystack)
       description: Initialize a deposit transaction via Paystack. Returns authorization URL.
@@ -233,7 +233,7 @@ paths:
           description: Paystack Error
           schema:
             $ref: '#/components/schemas/ErrorResponse'
-  /api/wallet/deposit/{reference}/status:
+  /wallet/deposit/{reference}/status:
     get:
       summary: Get Deposit Status
       description: Check status of a specific deposit transaction.
@@ -263,7 +263,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /api/wallet/transfer:
+  /wallet/transfer:
     post:
       summary: Transfer Funds
       description: Transfer funds to another wallet. Atomic transaction.
@@ -321,7 +321,7 @@ paths:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
 
-  /api/wallet:
+  /wallet:
     get:
       summary: Get Wallet Details
       description: Retrieve full wallet details including ID and UserID.
@@ -340,7 +340,7 @@ paths:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
 
-  /api/wallet/balance:
+  /wallet/balance:
     get:
       summary: Get Wallet Balance
       description: Retrieve current wallet balance.
@@ -359,7 +359,7 @@ paths:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
 
-  /api/wallet/transactions:
+  /wallet/transactions:
     get:
       summary: Get Transaction History
       description: Retrieve paginated transaction history.
@@ -387,7 +387,7 @@ paths:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
 
-  /api/wallet/paystack/webhook:
+  /wallet/paystack/webhook:
     post:
       summary: Paystack Webhook
       description: Public endpoint for Paystack events. Verifies signature.

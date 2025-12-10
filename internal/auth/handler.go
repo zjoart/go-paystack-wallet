@@ -22,7 +22,7 @@ type Handler struct {
 }
 
 func NewHandler(cfg config.Config, userRepo user.Repository) *Handler {
-	redirectURL := fmt.Sprintf("http://%s:%s/api/auth/google/callback", cfg.Host, cfg.Port)
+	redirectURL := fmt.Sprintf("%s/auth/google/callback", cfg.Host)
 	oauth2Config := &oauth2.Config{
 		ClientID:     cfg.GoogleClientID,
 		ClientSecret: cfg.GoogleClientSecret,

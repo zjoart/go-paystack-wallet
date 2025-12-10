@@ -22,6 +22,8 @@ type Config struct {
 	Env                  string
 	AllowedOrigins       []string
 	MaxActiveKeys        int
+	RedisURL             string
+	RedisPassword        string
 }
 
 func LoadConfig() Config {
@@ -42,6 +44,8 @@ func LoadConfig() Config {
 		Env:                  getEnv("ENV"),
 		AllowedOrigins:       strings.Split(getEnv("ALLOWED_ORIGINS"), ","),
 		MaxActiveKeys:        getEnvAsInt("MAX_ACTIVE_KEYS"),
+		RedisURL:             getEnv("REDIS_URL"),
+		RedisPassword:        getEnv("REDIS_PASSWORD"),
 	}
 }
 

@@ -16,18 +16,20 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/zjoart/go-paystack-wallet/internal/user"
 	"github.com/zjoart/go-paystack-wallet/pkg/config"
+	"github.com/zjoart/go-paystack-wallet/pkg/events"
 	"github.com/zjoart/go-paystack-wallet/pkg/logger"
 	"github.com/zjoart/go-paystack-wallet/pkg/utils"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type Handler struct {
-	Config config.Config
-	Repo   Repository
+	Config      config.Config
+	Repo        Repository
+	RedisClient *events.RedisClient
 }
 
-func NewHandler(cfg config.Config, repo Repository) *Handler {
-	return &Handler{Config: cfg, Repo: repo}
+func NewHandler(cfg config.Config, repo Repository, redisClient *events.RedisClient) *Handler {
+	return &Handler{Config: cfg, Repo: repo, RedisClient: redisClient}
 }
 
 type CreateWalletRequest struct {
@@ -119,7 +121,7 @@ func (h *Handler) WalletDeposit(w http.ResponseWriter, r *http.Request) {
 		"reference":    reference,
 		"currency":     "NGN",
 		"channels":     h.Config.PaystackChannels,
-		"callback_url": fmt.Sprintf("%s/api/wallet/deposit/callback", h.Config.Host),
+		"callback_url": fmt.Sprintf("%s/wallet/deposit/callback", h.Config.Host),
 		"metadata":     map[string]interface{}{"wallet_id": wallet.ID.String()},
 	}
 
@@ -237,19 +239,22 @@ func (h *Handler) PaystackWebhook(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if err := h.Repo.CreditWallet(tx.WalletID.String(), event.Data.Amount); err != nil {
-			logger.Error("Webhook: Failed to credit wallet", logger.Fields{"error": err.Error(), "wallet_id": tx.WalletID.String()})
+		// Publish event to Redis
+		webhookEvent := events.WebhookEvent{
+			Event:     event.Event,
+			Reference: event.Data.Reference,
+			Status:    event.Data.Status,
+			Amount:    event.Data.Amount,
+			Timestamp: time.Now(),
+		}
+
+		if err := h.RedisClient.PublishEvent(r.Context(), webhookEvent); err != nil {
+			logger.Error("Webhook: Failed to publish event", logger.Fields{"error": err.Error(), "reference": event.Data.Reference})
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
-		if err := h.Repo.UpdateTransactionStatus(event.Data.Reference, TransactionSuccess); err != nil {
-			logger.Error("CRITICAL: Balance credited but status update failed", logger.Fields{"reference": event.Data.Reference, "error": err.Error()})
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		logger.Info("Webhook: Transaction processed successfully", logger.Fields{"reference": event.Data.Reference})
+		logger.Info("Webhook: Event queued", logger.Fields{"reference": event.Data.Reference})
 	}
 
 	w.WriteHeader(http.StatusOK)

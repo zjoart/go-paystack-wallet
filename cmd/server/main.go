@@ -9,8 +9,10 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/zjoart/go-paystack-wallet/cmd/routes"
+	"github.com/zjoart/go-paystack-wallet/internal/wallet"
 	"github.com/zjoart/go-paystack-wallet/pkg/config"
 	"github.com/zjoart/go-paystack-wallet/pkg/database"
+	"github.com/zjoart/go-paystack-wallet/pkg/events"
 	"github.com/zjoart/go-paystack-wallet/pkg/logger"
 )
 
@@ -18,10 +20,16 @@ func main() {
 	cfg := config.LoadConfig()
 
 	database.Connect(cfg.DBUrl)
-	// Database migration managed via SQL files/make
+
+	redisClient := events.NewRedisClient(cfg)
+	walletRepo := wallet.NewRepository(database.DB)
+
+	// start background worker
+	worker := wallet.NewWebhookWorker(cfg, walletRepo, redisClient)
+	worker.Start()
 
 	r := mux.NewRouter()
-	handler := routes.RegisterRoutes(r, cfg)
+	handler := routes.RegisterRoutes(r, cfg, redisClient, walletRepo)
 
 	server := &http.Server{
 		Addr:         ":" + cfg.Port,
