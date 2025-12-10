@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/zjoart/go-paystack-wallet/cmd/routes"
+	"github.com/zjoart/go-paystack-wallet/internal/routes"
 	"github.com/zjoart/go-paystack-wallet/internal/wallet"
 	"github.com/zjoart/go-paystack-wallet/pkg/config"
 	"github.com/zjoart/go-paystack-wallet/pkg/database"
