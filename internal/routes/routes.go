@@ -42,6 +42,8 @@ func RegisterRoutes(r *mux.Router, cfg config.Config, redisClient *events.RedisC
 	keysR.Use(auth.JWTMiddleware(cfg, userRepo))
 	keysR.HandleFunc("/create", keyHandler.CreateAPIKey).Methods("POST")
 	keysR.HandleFunc("/rollover", keyHandler.RolloverAPIKey).Methods("POST")
+	keysR.HandleFunc("", keyHandler.ListAPIKeys).Methods("GET")
+	keysR.HandleFunc("/revoke", keyHandler.RevokeAPIKey).Methods("POST")
 
 	walletHandler := wallet.NewHandler(cfg, walletRepo, redisClient)
 

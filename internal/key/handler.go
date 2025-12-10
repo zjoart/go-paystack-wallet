@@ -3,6 +3,7 @@ package key
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -12,6 +13,7 @@ import (
 	"github.com/zjoart/go-paystack-wallet/internal/user"
 	"github.com/zjoart/go-paystack-wallet/pkg/config"
 	"github.com/zjoart/go-paystack-wallet/pkg/utils"
+	"gorm.io/gorm"
 )
 
 type Handler struct {
@@ -164,6 +166,66 @@ func (h *Handler) RolloverAPIKey(w http.ResponseWriter, r *http.Request) {
 		"masked_key": newKey.MaskedKey,
 		"expires_at": newKey.ExpiresAt,
 	})
+}
+
+type RevokeKeyRequest struct {
+	KeyID string `json:"key_id"`
+}
+
+func (h *Handler) RevokeAPIKey(w http.ResponseWriter, r *http.Request) {
+	usr := r.Context().Value(utils.UserKey).(user.User)
+
+	var req RevokeKeyRequest
+	if status, err := utils.DecodeJSONBody(w, r, &req); err != nil {
+		utils.BuildErrorResponse(w, status, "Invalid request body", map[string]string{"error": err.Error()})
+		return
+	}
+
+	if err := h.Repo.RevokeKey(req.KeyID, usr.ID.String()); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			utils.BuildErrorResponse(w, http.StatusNotFound, "Key not found", nil)
+		} else {
+			utils.BuildErrorResponse(w, http.StatusInternalServerError, "Failed to revoke key", nil)
+		}
+		return
+	}
+
+	utils.BuildSuccessResponse(w, http.StatusOK, "API Key revoked successfully", nil)
+}
+
+func (h *Handler) ListAPIKeys(w http.ResponseWriter, r *http.Request) {
+	usr := r.Context().Value(utils.UserKey).(user.User)
+
+	keys, err := h.Repo.GetKeysByUserID(usr.ID.String())
+	if err != nil {
+		utils.BuildErrorResponse(w, http.StatusInternalServerError, "Failed to fetch keys", nil)
+		return
+	}
+
+	type SafeKeyResponse struct {
+		ID          string    `json:"id"`
+		Name        string    `json:"name"`
+		MaskedKey   string    `json:"masked_key"`
+		Permissions []string  `json:"permissions"`
+		ExpiresAt   time.Time `json:"expires_at"`
+		IsRevoked   bool      `json:"is_revoked"`
+		CreatedAt   time.Time `json:"created_at"`
+	}
+
+	var safeKeys []SafeKeyResponse
+	for _, k := range keys {
+		safeKeys = append(safeKeys, SafeKeyResponse{
+			ID:          k.ID.String(),
+			Name:        k.Name,
+			MaskedKey:   k.MaskedKey,
+			Permissions: k.Permissions,
+			ExpiresAt:   k.ExpiresAt,
+			IsRevoked:   k.IsRevoked,
+			CreatedAt:   k.CreatedAt,
+		})
+	}
+
+	utils.BuildSuccessResponse(w, http.StatusOK, "API Keys retrieved", safeKeys)
 }
 
 func parseExpiry(expiry string) (time.Time, error) {

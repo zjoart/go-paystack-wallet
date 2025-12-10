@@ -14,6 +14,8 @@ type Repository interface {
 	GetKey(keyID string, userID string) (*APIKey, error)
 	GetKeyByValue(keyValue string, userID string) (*APIKey, error)
 	FindByKey(keyValue string) (*APIKey, error)
+	GetKeysByUserID(userID string) ([]APIKey, error)
+	RevokeKey(keyID string, userID string) error
 }
 
 type repository struct {
@@ -38,6 +40,23 @@ func (r *repository) GetKey(keyID string, userID string) (*APIKey, error) {
 	var key APIKey
 	err := r.db.Where("id = ? AND user_id = ?", keyID, userID).First(&key).Error
 	return &key, err
+}
+
+func (r *repository) GetKeysByUserID(userID string) ([]APIKey, error) {
+	var keys []APIKey
+	err := r.db.Where("user_id = ?", userID).Order("created_at desc").Find(&keys).Error
+	return keys, err
+}
+
+func (r *repository) RevokeKey(keyID string, userID string) error {
+	result := r.db.Model(&APIKey{}).Where("id = ? AND user_id = ?", keyID, userID).Update("is_revoked", true)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
 }
 
 func (r *repository) GetKeyByValue(keyValue string, userID string) (*APIKey, error) {
