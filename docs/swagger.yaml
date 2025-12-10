@@ -1,0 +1,246 @@
+openapi: "3.0.0"
+info:
+  title: Go Paystack Wallet API
+  description: API for managing wallets and payments
+  version: 1.0.0
+servers:
+  - url: {{BASE_URL}}
+    description: Local Development Server
+
+paths:
+  /api/auth/google:
+    get:
+      summary: Initiate Google Login
+      description: |
+        Redirects user to Google OAuth2 login page.
+        
+        **Note:** properties "Failed to fetch" in Swagger UI is expected due to Google's CORS policy blocking AJAX redirects.
+        
+        👉 [**Click here to Login with Google**](/api/auth/google)
+      tags:
+        - Auth
+      responses:
+        '307':
+          description: Temporary Redirect to Google
+
+  /api/auth/google/callback:
+    get:
+      summary: Google Login Callback
+      description: Handle Google OAuth2 callback, create user if not exists, and return JWT
+      tags:
+        - Auth
+      parameters:
+        - in: query
+          name: code
+          required: true
+          schema:
+            type: string
+          description: OAuth2 authorization code
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/keys/create:
+    post:
+      summary: Create API Key
+      description: Create a new API key for the authenticated user
+      tags:
+        - Keys
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateKeyRequest"
+      responses:
+        '201':
+          description: API Key created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KeyResponse"
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '403':
+          description: Forbidden (Max limit reached)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/keys/rollover:
+    post:
+      summary: Rollover API Key
+      description: Replace an expired API key with a new one
+      tags:
+        - Keys
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RolloverKeyRequest"
+      responses:
+        '201':
+          description: API Key rolled over
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KeyResponse"
+        '400':
+          description: Invalid request or Key not expired
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '404':
+          description: Expired key not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: apiKey
+      name: Authorization
+      in: header
+
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: Error description
+        data:
+          type: object
+          nullable: true
+
+    LoginResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Login successful
+        data:
+          type: object
+          properties:
+            token:
+              type: string
+            expires_at:
+              type: string
+              format: date-time
+            user:
+              $ref: "#/components/schemas/User"
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+        google_id:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CreateKeyRequest:
+      type: object
+      required:
+        - name
+        - permissions
+        - expiry
+      properties:
+        name:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+            enum: [READ, DEPOSIT, WITHDRAWAL, TRANSFER]
+          description: List of allowed permissions
+        expiry:
+          type: string
+          enum: [1H, 1D, 1M, 1Y]
+
+    RolloverKeyRequest:
+      type: object
+      required:
+        - expired_key_id
+        - expiry
+      properties:
+        expired_key_id:
+          type: string
+        expiry:
+          type: string
+          enum: [1H, 1D, 1M, 1Y]
+
+    KeyResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Operation successful
+        data:
+          type: object
+          properties:
+            api_key:
+              type: string
+            expires_at:
+              type: string
+              format: date-time

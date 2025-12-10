@@ -1,0 +1,23 @@
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: wallet_db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: wallet_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - wallet_network
+
+volumes:
+  postgres_data:
+
+networks:
+  wallet_network:
+    name: wallet_network
+    driver: bridge
