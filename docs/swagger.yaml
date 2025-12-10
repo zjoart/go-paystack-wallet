@@ -4,10 +4,16 @@ info:
   description: API for managing wallets and payments
   version: 1.0.0
 servers:
-  - url: {{BASE_URL}}
-    description: Local Development Server
-
-
+  - url: "{protocol}://{host}"
+    description: Api Server
+    variables:
+      protocol:
+        enum:
+          - http
+          - https
+        default: http
+      host:
+        default: localhost:8080
 paths:
   /health:
     get:
