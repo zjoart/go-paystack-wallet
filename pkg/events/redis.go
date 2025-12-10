@@ -29,11 +29,17 @@ type WebhookEvent struct {
 }
 
 func NewRedisClient(cfg config.Config) *RedisClient {
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     cfg.RedisURL,
-		Password: cfg.RedisPassword,
-		DB:       0,
-	})
+	opt, err := redis.ParseURL(cfg.RedisURL)
+	if err != nil {
+		logger.Error("Failed to parse Redis url", logger.Fields{"error": err.Error(), "url": cfg.RedisURL})
+		opt = &redis.Options{
+			Addr:     cfg.RedisURL,
+			Password: cfg.RedisPassword,
+			DB:       0,
+		}
+	}
+
+	rdb := redis.NewClient(opt)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
