@@ -7,7 +7,20 @@ servers:
   - url: {{BASE_URL}}
     description: Local Development Server
 
+
 paths:
+  /health:
+    get:
+      summary: Health Check
+      description: Returns service health status
+      responses:
+        200:
+          description: Service is running
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
   /api/auth/google:
     get:
       summary: Initiate Google Login
@@ -72,7 +85,7 @@ paths:
               $ref: "#/components/schemas/CreateKeyRequest"
       responses:
         '201':
-          description: API Key created
+          description: API Key created (Key validation logic requires raw key, so it is returned only once here)
           content:
             application/json:
               schema:
@@ -118,7 +131,7 @@ paths:
               $ref: "#/components/schemas/RolloverKeyRequest"
       responses:
         '201':
-          description: API Key rolled over
+          description: API Key rolled over (New key returned only once)
           content:
             application/json:
               schema:
@@ -167,23 +180,23 @@ paths:
         201:
           description: Wallet created
           schema:
-            $ref: '#/definitions/SuccessResponse'
+            $ref: '#/components/schemas/SuccessResponse'
         400:
           description: Invalid Request (e.g., bad PIN)
           schema:
-            $ref: '#/definitions/ErrorResponse'
+            $ref: '#/components/schemas/ErrorResponse'
         409:
           description: User already has a wallet
           schema:
-            $ref: '#/definitions/ErrorResponse'
+            $ref: '#/components/schemas/ErrorResponse'
         415:
           description: Unsupported Media Type
           schema:
-            $ref: '#/definitions/ErrorResponse'
+            $ref: '#/components/schemas/ErrorResponse'
         500:
           description: Server Error
           schema:
-            $ref: '#/definitions/ErrorResponse'
+            $ref: '#/components/schemas/ErrorResponse'
 
   /api/wallet/deposit:
     post:
@@ -205,21 +218,21 @@ paths:
               properties:
                 amount:
                   type: integer
-                  description: Amount in Kobo (Min: {{MIN_TRANSACTION_AMOUNT}})
+                  description: "Amount in Kobo (Min: {{MIN_TRANSACTION_AMOUNT}})"
                   example: 10000
       responses:
         200:
           description: Paystack Initialization Successful
           schema:
-            $ref: '#/definitions/SuccessResponse'
+            $ref: '#/components/schemas/SuccessResponse'
         415:
           description: Unsupported Media Type
           schema:
-            $ref: '#/definitions/ErrorResponse'
+            $ref: '#/components/schemas/ErrorResponse'
         500:
           description: Paystack Error
           schema:
-            $ref: '#/definitions/ErrorResponse'
+            $ref: '#/components/schemas/ErrorResponse'
   /api/wallet/deposit/{reference}/status:
     get:
       summary: Get Deposit Status
@@ -242,13 +255,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/definitions/SuccessResponse'
+                $ref: '#/components/schemas/SuccessResponse'
         404:
           description: Transaction not found
           content:
             application/json:
               schema:
-                $ref: '#/definitions/ErrorResponse'
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/wallet/transfer:
     post:
@@ -276,7 +289,7 @@ paths:
                   example: "0123456789"
                 amount:
                   type: integer
-                  description: Amount in Kobo (Min: {{MIN_TRANSACTION_AMOUNT}})
+                  description: "Amount in Kobo (Min: {{MIN_TRANSACTION_AMOUNT}})"
                   example: 10000
                 pin:
                   type: string
@@ -290,23 +303,23 @@ paths:
         200:
           description: Transfer Successful
           schema:
-            $ref: '#/definitions/SuccessResponse'
+            $ref: '#/components/schemas/SuccessResponse'
         400:
           description: Bad Request (Invalid PIN, Insufficient Balance)
           schema:
-            $ref: '#/definitions/ErrorResponse'
+            $ref: '#/components/schemas/ErrorResponse'
         404:
           description: Wallet not found
           schema:
-            $ref: '#/definitions/ErrorResponse'
+            $ref: '#/components/schemas/ErrorResponse'
         415:
           description: Unsupported Media Type
           schema:
-            $ref: '#/definitions/ErrorResponse'
+            $ref: '#/components/schemas/ErrorResponse'
         500:
           description: Transfer Failed
           schema:
-            $ref: '#/definitions/ErrorResponse'
+            $ref: '#/components/schemas/ErrorResponse'
 
   /api/wallet:
     get:
@@ -321,11 +334,11 @@ paths:
         200:
           description: Wallet Details Retrieved
           schema:
-            $ref: '#/definitions/SuccessResponse'
+            $ref: '#/components/schemas/SuccessResponse'
         404:
           description: Wallet not found
           schema:
-            $ref: '#/definitions/ErrorResponse'
+            $ref: '#/components/schemas/ErrorResponse'
 
   /api/wallet/balance:
     get:
@@ -340,11 +353,11 @@ paths:
         200:
           description: Balance Retrieved
           schema:
-            $ref: '#/definitions/SuccessResponse'
+            $ref: '#/components/schemas/SuccessResponse'
         404:
           description: Wallet not found
           schema:
-            $ref: '#/definitions/ErrorResponse'
+            $ref: '#/components/schemas/ErrorResponse'
 
   /api/wallet/transactions:
     get:
@@ -368,11 +381,11 @@ paths:
         200:
           description: History Retrieved
           schema:
-            $ref: '#/definitions/SuccessResponse'
+            $ref: '#/components/schemas/SuccessResponse'
         404:
           description: Wallet not found
           schema:
-            $ref: '#/definitions/ErrorResponse'
+            $ref: '#/components/schemas/ErrorResponse'
 
   /api/wallet/paystack/webhook:
     post:

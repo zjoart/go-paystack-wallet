@@ -11,6 +11,7 @@ type APIKey struct {
 	ID          uuid.UUID      `gorm:"type:uuid;default:uuid_generate_v4();primary_key" json:"id"`
 	UserID      uuid.UUID      `gorm:"type:uuid;not null" json:"user_id"`
 	Key         string         `gorm:"uniqueIndex;not null" json:"key"`
+	MaskedKey   string         `json:"masked_key"`
 	Permissions pq.StringArray `gorm:"type:text[]" json:"permissions"`
 	Name        string         `json:"name"`
 	ExpiresAt   time.Time      `json:"expires_at"`

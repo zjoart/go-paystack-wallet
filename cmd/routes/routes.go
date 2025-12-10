@@ -17,6 +17,7 @@ import (
 	"github.com/zjoart/go-paystack-wallet/pkg/config"
 	"github.com/zjoart/go-paystack-wallet/pkg/database"
 	"github.com/zjoart/go-paystack-wallet/pkg/logger"
+	"github.com/zjoart/go-paystack-wallet/pkg/utils"
 )
 
 func RegisterRoutes(r *mux.Router, cfg config.Config) http.Handler {
@@ -27,6 +28,10 @@ func RegisterRoutes(r *mux.Router, cfg config.Config) http.Handler {
 	keyHandler := key.NewHandler(cfg, keyRepo)
 
 	r.Use(middleware.LoggingMiddleware)
+
+	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		utils.BuildSuccessResponse(w, http.StatusOK, "Service is running", nil)
+	}).Methods("GET")
 
 	authR := r.PathPrefix("/api/auth").Subrouter()
 	authR.HandleFunc("/google", authHandler.GoogleLogin).Methods("GET")
@@ -50,12 +55,12 @@ func RegisterRoutes(r *mux.Router, cfg config.Config) http.Handler {
 
 	opsR := walletR.PathPrefix("").Subrouter()
 	opsR.Use(auth.UnifiedAuthMiddleware(cfg, userRepo, keyRepo))
-	opsR.HandleFunc("", walletHandler.GetWallet).Methods("GET")
-	opsR.HandleFunc("/deposit", walletHandler.WalletDeposit).Methods("POST")
-	opsR.HandleFunc("/deposit/{reference}/status", walletHandler.GetDepositStatus).Methods("GET")
-	opsR.HandleFunc("/transfer", walletHandler.TransferFunds).Methods("POST")
-	opsR.HandleFunc("/balance", walletHandler.GetWalletBalance).Methods("GET")
-	opsR.HandleFunc("/transactions", walletHandler.GetTransactions).Methods("GET")
+	opsR.Handle("", auth.RequirePermission(string(key.PermissionRead))(http.HandlerFunc(walletHandler.GetWallet))).Methods("GET")
+	opsR.Handle("/deposit", auth.RequirePermission(string(key.PermissionDeposit))(http.HandlerFunc(walletHandler.WalletDeposit))).Methods("POST")
+	opsR.Handle("/deposit/{reference}/status", auth.RequirePermission(string(key.PermissionRead))(http.HandlerFunc(walletHandler.GetDepositStatus))).Methods("GET")
+	opsR.Handle("/transfer", auth.RequirePermission(string(key.PermissionTransfer))(http.HandlerFunc(walletHandler.TransferFunds))).Methods("POST")
+	opsR.Handle("/balance", auth.RequirePermission(string(key.PermissionRead))(http.HandlerFunc(walletHandler.GetWalletBalance))).Methods("GET")
+	opsR.Handle("/transactions", auth.RequirePermission(string(key.PermissionRead))(http.HandlerFunc(walletHandler.GetTransactions))).Methods("GET")
 
 	if cfg.Env != "production" {
 

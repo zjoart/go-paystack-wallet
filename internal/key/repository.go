@@ -1,6 +1,8 @@
 package key
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"time"
 
 	"gorm.io/gorm"
@@ -39,13 +41,21 @@ func (r *repository) GetKey(keyID string, userID string) (*APIKey, error) {
 }
 
 func (r *repository) GetKeyByValue(keyValue string, userID string) (*APIKey, error) {
+	hashedKey := hashKey(keyValue)
 	var key APIKey
-	err := r.db.Where("key = ? AND user_id = ?", keyValue, userID).First(&key).Error
+	err := r.db.Where("key = ? AND user_id = ?", hashedKey, userID).First(&key).Error
 	return &key, err
 }
 
 func (r *repository) FindByKey(keyValue string) (*APIKey, error) {
+	hashedKey := hashKey(keyValue)
 	var key APIKey
-	err := r.db.Where("key = ?", keyValue).First(&key).Error
+	err := r.db.Where("key = ?", hashedKey).First(&key).Error
 	return &key, err
+}
+
+func hashKey(key string) string {
+	h := sha256.New()
+	h.Write([]byte(key))
+	return hex.EncodeToString(h.Sum(nil))
 }

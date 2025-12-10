@@ -1,0 +1,1 @@
+ALTER TABLE api_keys ADD COLUMN masked_key VARCHAR(255);

@@ -71,6 +71,7 @@ func UnifiedAuthMiddleware(cfg config.Config, userRepo user.Repository, keyRepo 
 					utils.BuildErrorResponse(w, http.StatusUnauthorized, "Invalid token: "+err.Error(), nil)
 					return
 				}
+
 				ctx := context.WithValue(r.Context(), utils.UserKey, *usr)
 				ctx = context.WithValue(ctx, utils.PermissionsKey, []string{"*"})
 				next.ServeHTTP(w, r.WithContext(ctx))

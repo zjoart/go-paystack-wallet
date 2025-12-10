@@ -21,18 +21,13 @@ type Config struct {
 	Host                 string
 	Env                  string
 	AllowedOrigins       []string
+	MaxActiveKeys        int
 }
 
 func LoadConfig() Config {
 	godotenv.Load()
 
 	paystackChannels := strings.Split(getEnv("PAYSTACK_CHANNELS"), ",")
-
-	minAmountStr := getEnv("MIN_TRANSACTION_AMOUNT")
-	minAmount, err := strconv.ParseInt(minAmountStr, 10, 64)
-	if err != nil {
-		panic("MIN_TRANSACTION_AMOUNT must be a valid integer")
-	}
 
 	return Config{
 		DBUrl:                getEnv("DATABASE_URL"),
@@ -41,11 +36,12 @@ func LoadConfig() Config {
 		JWTSecret:            getEnv("JWT_SECRET"),
 		PaystackSecret:       getEnv("PAYSTACK_SECRET"),
 		PaystackChannels:     paystackChannels,
-		MinTransactionAmount: minAmount,
+		MinTransactionAmount: getEnvAsInt64("MIN_TRANSACTION_AMOUNT"),
 		Port:                 getEnv("PORT"),
 		Host:                 getEnv("HOST"),
 		Env:                  getEnv("ENV"),
 		AllowedOrigins:       strings.Split(getEnv("ALLOWED_ORIGINS"), ","),
+		MaxActiveKeys:        getEnvAsInt("MAX_ACTIVE_KEYS"),
 	}
 }
 
@@ -53,6 +49,25 @@ func getEnv(key string) string {
 	if value := os.Getenv(key); value != "" {
 		return value
 	}
-
 	panic(fmt.Sprintf("%s is required", key))
+}
+
+func getEnvAsInt(key string) int {
+	valueStr := getEnv(key)
+
+	value, err := strconv.Atoi(valueStr)
+	if err != nil {
+		panic(fmt.Sprintf("%s must be a valid integer", key))
+	}
+	return value
+}
+
+func getEnvAsInt64(key string) int64 {
+	valueStr := getEnv(key)
+
+	value, err := strconv.ParseInt(valueStr, 10, 64)
+	if err != nil {
+		panic(fmt.Sprintf("%s must be a valid integer", key))
+	}
+	return value
 }

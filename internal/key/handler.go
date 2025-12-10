@@ -60,8 +60,8 @@ func (h *Handler) CreateAPIKey(w http.ResponseWriter, r *http.Request) {
 		utils.BuildErrorResponse(w, http.StatusInternalServerError, "Failed to count keys", nil)
 		return
 	}
-	if count >= 5 {
-		utils.BuildErrorResponse(w, http.StatusForbidden, "Maximum of 5 active keys allowed", nil)
+	if count >= int64(h.Config.MaxActiveKeys) {
+		utils.BuildErrorResponse(w, http.StatusForbidden, fmt.Sprintf("Maximum of %d active keys allowed", h.Config.MaxActiveKeys), nil)
 		return
 	}
 
@@ -71,10 +71,14 @@ func (h *Handler) CreateAPIKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	hashedKey := hashKey(keyString)
+	maskedKey := maskKey(keyString)
+
 	apiKey := APIKey{
 		UserID:      usr.ID,
 		Name:        req.Name,
-		Key:         keyString,
+		Key:         hashedKey,
+		MaskedKey:   maskedKey,
 		Permissions: pq.StringArray(validPerms),
 		ExpiresAt:   expiresAt,
 	}
@@ -85,7 +89,7 @@ func (h *Handler) CreateAPIKey(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.BuildSuccessResponse(w, http.StatusCreated, "API Key created", map[string]interface{}{
-		"api_key":    apiKey.Key,
+		"api_key":    keyString,
 		"expires_at": apiKey.ExpiresAt,
 	})
 }
@@ -99,6 +103,18 @@ func (h *Handler) RolloverAPIKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check limit before proceeding (since we are creating a new active key)
+	count, err := h.Repo.CountActiveKeys(usr.ID.String())
+	if err != nil {
+		utils.BuildErrorResponse(w, http.StatusInternalServerError, "Failed to count keys", nil)
+		return
+	}
+	if count >= int64(h.Config.MaxActiveKeys) {
+		utils.BuildErrorResponse(w, http.StatusForbidden, fmt.Sprintf("Maximum of %d active keys allowed", h.Config.MaxActiveKeys), nil)
+		return
+	}
+
+	// Find the old key (repo will hash the ID if it's a key value)
 	oldKey, err := h.Repo.GetKeyByValue(req.ExpiredKeyID, usr.ID.String())
 	if err != nil {
 		oldKey, err = h.Repo.GetKey(req.ExpiredKeyID, usr.ID.String())
@@ -125,10 +141,14 @@ func (h *Handler) RolloverAPIKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	hashedKey := hashKey(newKeyString)
+	maskedKey := maskKey(newKeyString)
+
 	newKey := APIKey{
 		UserID:      usr.ID,
 		Name:        oldKey.Name,
-		Key:         newKeyString,
+		Key:         hashedKey,
+		MaskedKey:   maskedKey,
 		Permissions: oldKey.Permissions,
 		ExpiresAt:   expiresAt,
 	}
@@ -139,7 +159,7 @@ func (h *Handler) RolloverAPIKey(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.BuildSuccessResponse(w, http.StatusCreated, "API Key rolled over", map[string]interface{}{
-		"api_key":    newKey.Key,
+		"api_key":    newKeyString,
 		"expires_at": newKey.ExpiresAt,
 	})
 }
@@ -185,4 +205,11 @@ func validatePermissions(requested []string) ([]string, error) {
 		normalized = append(normalized, upperP)
 	}
 	return normalized, nil
+}
+
+func maskKey(key string) string {
+	if len(key) <= 4 {
+		return "****"
+	}
+	return key[:8] + "..." + key[len(key)-4:]
 }
