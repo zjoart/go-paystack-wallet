@@ -88,8 +88,9 @@ func (h *Handler) CreateAPIKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.BuildSuccessResponse(w, http.StatusCreated, "API Key created", map[string]interface{}{
+	utils.BuildSuccessResponse(w, http.StatusCreated, "API Key created, This key will only be shown once. Please save it securely.", map[string]interface{}{
 		"api_key":    keyString,
+		"masked_key": apiKey.MaskedKey,
 		"expires_at": apiKey.ExpiresAt,
 	})
 }
@@ -100,17 +101,6 @@ func (h *Handler) RolloverAPIKey(w http.ResponseWriter, r *http.Request) {
 	var req RolloverKeyRequest
 	if status, err := utils.DecodeJSONBody(w, r, &req); err != nil {
 		utils.BuildErrorResponse(w, status, "Invalid request body", map[string]string{"error": err.Error()})
-		return
-	}
-
-	// Check limit before proceeding (since we are creating a new active key)
-	count, err := h.Repo.CountActiveKeys(usr.ID.String())
-	if err != nil {
-		utils.BuildErrorResponse(w, http.StatusInternalServerError, "Failed to count keys", nil)
-		return
-	}
-	if count >= int64(h.Config.MaxActiveKeys) {
-		utils.BuildErrorResponse(w, http.StatusForbidden, fmt.Sprintf("Maximum of %d active keys allowed", h.Config.MaxActiveKeys), nil)
 		return
 	}
 
@@ -126,6 +116,17 @@ func (h *Handler) RolloverAPIKey(w http.ResponseWriter, r *http.Request) {
 
 	if time.Now().Before(oldKey.ExpiresAt) {
 		utils.BuildErrorResponse(w, http.StatusBadRequest, "Key is not expired yet", nil)
+		return
+	}
+
+	// Check limit before proceeding (since we are creating a new active key)
+	count, err := h.Repo.CountActiveKeys(usr.ID.String())
+	if err != nil {
+		utils.BuildErrorResponse(w, http.StatusInternalServerError, "Failed to count keys", nil)
+		return
+	}
+	if count >= int64(h.Config.MaxActiveKeys) {
+		utils.BuildErrorResponse(w, http.StatusForbidden, fmt.Sprintf("Maximum of %d active keys allowed", h.Config.MaxActiveKeys), nil)
 		return
 	}
 
@@ -158,8 +159,9 @@ func (h *Handler) RolloverAPIKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.BuildSuccessResponse(w, http.StatusCreated, "API Key rolled over", map[string]interface{}{
+	utils.BuildSuccessResponse(w, http.StatusCreated, "API Key rolled over, This key will only be shown once. Please save it securely.", map[string]interface{}{
 		"api_key":    newKeyString,
+		"masked_key": newKey.MaskedKey,
 		"expires_at": newKey.ExpiresAt,
 	})
 }

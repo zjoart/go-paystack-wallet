@@ -17,12 +17,19 @@ type Wallet struct {
 	UpdatedAt    time.Time `json:"updated_at"`
 }
 
+type TransactionCategory string
+
+const (
+	CategoryDeposit    TransactionCategory = "DEPOSIT"
+	CategoryWithdrawal TransactionCategory = "WITHDRAWAL"
+	CategoryTransfer   TransactionCategory = "TRANSFER"
+)
+
 type TransactionType string
 
 const (
-	TransactionDeposit    TransactionType = "DEPOSIT"
-	TransactionWithdrawal TransactionType = "WITHDRAWAL"
-	TransactionTransfer   TransactionType = "TRANSFER"
+	TransactionCredit TransactionType = "CREDIT"
+	TransactionDebit  TransactionType = "DEBIT"
 )
 
 type TransactionStatus string
@@ -34,15 +41,16 @@ const (
 )
 
 type Transaction struct {
-	ID                    uuid.UUID         `gorm:"type:uuid;default:uuid_generate_v4();primary_key" json:"id"`
-	WalletID              uuid.UUID         `gorm:"type:uuid;not null" json:"wallet_id"`
-	Reference             string            `gorm:"uniqueIndex;not null" json:"reference"`
-	Type                  TransactionType   `gorm:"not null" json:"type"`
-	Amount                int64             `gorm:"not null" json:"amount"`
-	Status                TransactionStatus `gorm:"not null" json:"status"`
-	SenderWalletNumber    *string           `json:"sender_wallet_number,omitempty"`
-	RecipientWalletNumber *string           `json:"recipient_wallet_number,omitempty"`
-	Description           string            `json:"description"`
-	CreatedAt             time.Time         `json:"created_at"`
-	UpdatedAt             time.Time         `json:"updated_at"`
+	ID                    uuid.UUID           `gorm:"type:uuid;default:uuid_generate_v4();primary_key" json:"id"`
+	WalletID              uuid.UUID           `gorm:"type:uuid;not null" json:"wallet_id"`
+	Reference             string              `gorm:"uniqueIndex;not null" json:"reference"`
+	Category              TransactionCategory `gorm:"not null" json:"category"`
+	Type                  TransactionType     `gorm:"not null" json:"type"`
+	Amount                int64               `gorm:"not null" json:"amount"`
+	Status                TransactionStatus   `gorm:"not null" json:"status"`
+	SenderWalletNumber    *string             `json:"sender_wallet_number,omitempty"`
+	RecipientWalletNumber *string             `json:"recipient_wallet_number,omitempty"`
+	Description           string              `json:"description"`
+	CreatedAt             time.Time           `json:"created_at"`
+	UpdatedAt             time.Time           `json:"updated_at"`
 }

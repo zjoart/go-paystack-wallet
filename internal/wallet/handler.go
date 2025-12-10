@@ -172,7 +172,8 @@ func (h *Handler) WalletDeposit(w http.ResponseWriter, r *http.Request) {
 	tx := Transaction{
 		WalletID:    wallet.ID,
 		Reference:   reference,
-		Type:        TransactionDeposit,
+		Category:    CategoryDeposit,
+		Type:        TransactionCredit,
 		Amount:      req.Amount,
 		Status:      TransactionPending,
 		Description: "Wallet Deposit via Paystack",

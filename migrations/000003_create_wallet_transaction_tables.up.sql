@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS transactions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     wallet_id UUID NOT NULL REFERENCES wallets(id) ON DELETE CASCADE,
     reference VARCHAR(255) UNIQUE NOT NULL,
+    category VARCHAR(20) NOT NULL,
     type VARCHAR(20) NOT NULL,
     amount BIGINT NOT NULL,
     status VARCHAR(20) NOT NULL,
