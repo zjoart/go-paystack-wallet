@@ -51,12 +51,12 @@ func RegisterRoutes(r *mux.Router, cfg config.Config, redisClient *events.RedisC
 
 	walletR.HandleFunc("/paystack/webhook", walletHandler.PaystackWebhook).Methods("POST")
 
-	createR := walletR.PathPrefix("/create").Subrouter()
-	createR.Use(auth.JWTMiddleware(cfg, userRepo))
-	createR.HandleFunc("", walletHandler.CreateWallet).Methods("POST")
-
 	opsR := walletR.PathPrefix("").Subrouter()
 	opsR.Use(auth.UnifiedAuthMiddleware(cfg, userRepo, keyRepo))
+
+	opsR.HandleFunc("/create",
+		walletHandler.CreateWallet).Methods("POST")
+
 	opsR.Handle("", auth.RequirePermission(string(key.PermissionRead))(http.HandlerFunc(walletHandler.GetWallet))).Methods("GET")
 	opsR.Handle("/deposit", auth.RequirePermission(string(key.PermissionDeposit))(http.HandlerFunc(walletHandler.WalletDeposit))).Methods("POST")
 	opsR.Handle("/deposit/{reference}/status", auth.RequirePermission(string(key.PermissionRead))(http.HandlerFunc(walletHandler.GetDepositStatus))).Methods("GET")

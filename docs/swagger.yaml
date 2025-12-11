@@ -223,6 +223,7 @@ paths:
         - Wallet
       security:
         - BearerAuth: []
+        - ApiKeyAuth: []
       requestBody:
         required: true
         content:
