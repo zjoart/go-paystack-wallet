@@ -48,7 +48,7 @@ func NewRedisClient(cfg config.Config) *RedisClient {
 		logger.Error("Failed to connect to Redis", logger.Fields{"error": err.Error(), "url": cfg.RedisURL})
 
 	} else {
-		logger.Info("Connected to Redis", logger.Fields{"url": cfg.RedisURL})
+		logger.Info("Connected to Redis")
 	}
 
 	return &RedisClient{Client: rdb}
