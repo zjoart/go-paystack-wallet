@@ -21,6 +21,7 @@ type Repository interface {
 	CountTransactions(walletID string) (int64, error)
 	TransferFunds(fromID, toID, senderNumber, recipientNumber, reference string, amount int64, description string) error
 	ProcessDeposit(reference string, amount int64) error
+	ProcessFailedTransaction(reference string) error
 }
 
 type repository struct {
@@ -180,6 +181,26 @@ func (r *repository) ProcessDeposit(reference string, amount int64) error {
 		}
 
 		if err := tx.Model(&Transaction{}).Where("reference = ?", reference).Update("status", TransactionSuccess).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
+}
+
+func (r *repository) ProcessFailedTransaction(reference string) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		var transaction Transaction
+		if err := tx.Where("reference = ?", reference).First(&transaction).Error; err != nil {
+			return err
+		}
+
+		if transaction.Status != TransactionPending {
+
+			return nil
+		}
+
+		if err := tx.Model(&Transaction{}).Where("reference = ?", reference).Update("status", TransactionFailed).Error; err != nil {
 			return err
 		}
 

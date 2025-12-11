@@ -227,35 +227,35 @@ func (h *Handler) PaystackWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if event.Event == "charge.success" {
-		tx, err := h.Repo.GetTransactionByReference(event.Data.Reference)
-		if err != nil {
-			logger.Warn("Webhook: Transaction not found", logger.Fields{"reference": event.Data.Reference})
-			w.WriteHeader(http.StatusOK)
-			return
-		}
+	tx, err := h.Repo.GetTransactionByReference(event.Data.Reference)
+	if err != nil {
+		logger.Warn("Webhook: Transaction not found", logger.Fields{"reference": event.Data.Reference})
+		w.WriteHeader(http.StatusOK)
+		return
+	}
 
-		if tx.Status == TransactionSuccess {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
+	if tx.Status != TransactionPending {
+		logger.Info("Webhook: Transaction already processed", logger.Fields{"reference": event.Data.Reference, "status": tx.Status})
+		w.WriteHeader(http.StatusOK)
+		return
+	}
 
-		// Publish event to Redis
-		webhookEvent := events.WebhookEvent{
-			Event:     event.Event,
-			Reference: event.Data.Reference,
-			Status:    event.Data.Status,
-			Amount:    event.Data.Amount,
-			Timestamp: time.Now(),
-		}
+	webhookEvent := events.WebhookEvent{
+		Event:     event.Event,
+		Reference: event.Data.Reference,
+		Status:    event.Data.Status,
+		Amount:    event.Data.Amount,
+		Timestamp: time.Now(),
+	}
+
+	if event.Event == "charge.success" || event.Event == "charge.failed" {
 
 		if err := h.RedisClient.PublishEvent(r.Context(), webhookEvent); err != nil {
 			logger.Error("Webhook: Failed to publish event", logger.Fields{"error": err.Error(), "reference": event.Data.Reference})
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-
-		logger.Info("Webhook: Event queued", logger.Fields{"reference": event.Data.Reference})
+		logger.Info("Webhook: Event queued", logger.Fields{"reference": event.Data.Reference, "event": event.Event})
 	}
 
 	w.WriteHeader(http.StatusOK)

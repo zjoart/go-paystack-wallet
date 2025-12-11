@@ -80,7 +80,7 @@ func (h *Handler) GoogleCallback(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	expirationTime := time.Now().Add(time.Hour * 72)
+	expirationTime := time.Now().Add(time.Hour * 1)
 	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		utils.UserIDKey: usr.ID,
 		utils.ExpKey:    expirationTime.Unix(),

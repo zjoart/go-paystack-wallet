@@ -49,13 +49,25 @@ func (w *WebhookWorker) processEvents() {
 func (w *WebhookWorker) handleEvent(event events.WebhookEvent, rawData []byte) {
 	maxRetries := 3
 	for i := 0; i < maxRetries; i++ {
-		err := w.Repo.ProcessDeposit(event.Reference, event.Amount)
-		if err == nil {
-			logger.Info("WebhookWorker: Successfully processed deposit", logger.Fields{"reference": event.Reference})
+		var err error
+		switch event.Event {
+		case "charge.success":
+			err = w.Repo.ProcessDeposit(event.Reference, event.Amount)
+		case "charge.failed":
+			err = w.Repo.ProcessFailedTransaction(event.Reference)
+		default:
+
+			logger.Warn("WebhookWorker: Unknown event type", logger.Fields{"event": event.Event, "reference": event.Reference})
 			return
 		}
 
-		logger.Warn("WebhookWorker: Failed to process deposit, retrying", logger.Fields{
+		if err == nil {
+			logger.Info("WebhookWorker: Successfully processed event", logger.Fields{"event": event.Event, "reference": event.Reference})
+			return
+		}
+
+		logger.Warn("WebhookWorker: Failed to process event, retrying", logger.Fields{
+			"event":     event.Event,
 			"reference": event.Reference,
 			"attempt":   i + 1,
 			"error":     err.Error(),
