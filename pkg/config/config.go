@@ -24,6 +24,8 @@ type Config struct {
 	MaxActiveKeys        int
 	RedisURL             string
 	RedisPassword        string
+	RateLimit            int
+	RateBurst            int
 }
 
 func LoadConfig() Config {
@@ -46,6 +48,8 @@ func LoadConfig() Config {
 		MaxActiveKeys:        getEnvAsInt("MAX_ACTIVE_KEYS"),
 		RedisURL:             getEnv("REDIS_URL"),
 		RedisPassword:        getEnv("REDIS_PASSWORD"),
+		RateLimit:            getEnvAsInt("RATE_LIMIT"),
+		RateBurst:            getEnvAsInt("RATE_BURST"),
 	}
 }
 

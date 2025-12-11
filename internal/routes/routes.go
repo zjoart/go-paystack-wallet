@@ -19,6 +19,7 @@ import (
 	"github.com/zjoart/go-paystack-wallet/pkg/events"
 	"github.com/zjoart/go-paystack-wallet/pkg/logger"
 	"github.com/zjoart/go-paystack-wallet/pkg/utils"
+	"golang.org/x/time/rate"
 )
 
 func RegisterRoutes(r *mux.Router, cfg config.Config, redisClient *events.RedisClient, walletRepo wallet.Repository) http.Handler {
@@ -30,15 +31,19 @@ func RegisterRoutes(r *mux.Router, cfg config.Config, redisClient *events.RedisC
 
 	r.Use(middleware.LoggingMiddleware)
 
+	rateLimiter := middleware.NewRateLimiter(rate.Limit(cfg.RateLimit), cfg.RateBurst)
+
 	r.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		utils.BuildSuccessResponse(w, http.StatusOK, "Service is running", nil)
 	}).Methods("GET")
 
 	authR := r.PathPrefix("/auth").Subrouter()
+	authR.Use(rateLimiter.Limit)
 	authR.HandleFunc("/google", authHandler.GoogleLogin).Methods("GET")
 	authR.HandleFunc("/google/callback", authHandler.GoogleCallback).Methods("GET")
 
 	keysR := r.PathPrefix("/keys").Subrouter()
+	keysR.Use(rateLimiter.Limit)
 	keysR.Use(auth.JWTMiddleware(cfg, userRepo))
 	keysR.HandleFunc("/create", keyHandler.CreateAPIKey).Methods("POST")
 	keysR.HandleFunc("/rollover", keyHandler.RolloverAPIKey).Methods("POST")
@@ -48,6 +53,7 @@ func RegisterRoutes(r *mux.Router, cfg config.Config, redisClient *events.RedisC
 	walletHandler := wallet.NewHandler(cfg, walletRepo, redisClient)
 
 	walletR := r.PathPrefix("/wallet").Subrouter()
+	walletR.Use(rateLimiter.Limit)
 
 	walletR.HandleFunc("/paystack/webhook", walletHandler.PaystackWebhook).Methods("POST")
 
