@@ -106,7 +106,6 @@ func (h *Handler) RolloverAPIKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Find the old key (repo will hash the ID if it's a key value)
 	oldKey, err := h.Repo.GetKeyByValue(req.ExpiredKeyID, usr.ID.String())
 	if err != nil {
 		oldKey, err = h.Repo.GetKey(req.ExpiredKeyID, usr.ID.String())
@@ -116,12 +115,16 @@ func (h *Handler) RolloverAPIKey(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	if oldKey.IsRevoked {
+		utils.BuildErrorResponse(w, http.StatusForbidden, "Key has been revoked", nil)
+		return
+	}
+
 	if time.Now().Before(oldKey.ExpiresAt) {
 		utils.BuildErrorResponse(w, http.StatusBadRequest, "Key is not expired yet", nil)
 		return
 	}
 
-	// Check limit before proceeding (since we are creating a new active key)
 	count, err := h.Repo.CountActiveKeys(usr.ID.String())
 	if err != nil {
 		utils.BuildErrorResponse(w, http.StatusInternalServerError, "Failed to count keys", nil)
