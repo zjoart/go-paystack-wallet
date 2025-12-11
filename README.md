@@ -1,29 +1,27 @@
-# Flux
+# Flux Wallet
 
-A golang digital wallet system featuring **Google OAuth**, **Paystack Integrated Payments**, and **Atomic Transactions**. Built for reliability with a **Redis Event-Driven Architecture**.
+A secure digital wallet service built with Go, Redis, and PostgreSQL. Features Google OAuth, atomic transactions, and Paystack integration.
 
-## key Features
-- 🔐 **Secure Authentication**: Seamless Google OAuth & JWT support.
-- 💳 **Smart Wallet**: Credit/Debit ledger, atomic transfers, and Paystack funding.
-- ⚡ **Event Driven**: Asynchronous webhook processing with Redis & Dead Letter Queues.
-- 🔑 **API Security**: One-time view API keys with granular permissions.
+## 🛠️ Local Installation
 
-## Quick Start
+1.  **Configure Environment**
+    Copy the example env file and update with your credentials:
+    ```bash
+    cp .env.example .env
+    ```
 
-1. **Setup Env**:
-   ```bash
-   cp .env.example .env
-   # Add your Google & Paystack keys
-   ```
+2.  **Start Application**
+    Docker Compose handles the database, redis, migrations, and app:
+    ```bash
+    make start-app
+    ```
 
-2. **Launch**:
-   ```bash
-   make start-app
-   ```
-   *Boots Database, Redis, runs migrations, and starts the server.*
+3.  **View Documentation**
+    Access the interactive API docs at: [http://localhost:8080/swagger/index.html](http://localhost:8080/swagger/index.html)
 
 
-> For all other commands, run `make help`.
 
-## API Docs
-Explore the interactive Swagger UI at `https://flux-wallet.up.railway.app/swagger/index.html` 
+### 1. Migrations
+This repository uses **GitHub Actions** to handle migrations via ci automatically.
+*   **Action**: Add `DATABASE_URL` to your GitHub Repository Secrets.
+

@@ -153,6 +153,68 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /keys:
+    get:
+      summary: List API Keys
+      description: Retrieve all API keys for the authenticated user.
+      tags:
+        - Keys
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of keys retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KeyListResponse"
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /keys/revoke:
+    post:
+      summary: Revoke API Key
+      description: Revoke (soft-delete) an API key by ID.
+      tags:
+        - Keys
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - key_id
+              properties:
+                key_id:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Key revoked successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        '404':
+          description: Key not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /wallet/create:
     post:
       summary: Create a Wallet
@@ -177,24 +239,34 @@ paths:
       responses:
         201:
           description: Wallet created
-          schema:
-            $ref: '#/components/schemas/SuccessResponse'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WalletResponse'
         400:
           description: Invalid Request (e.g., bad PIN)
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         409:
           description: User already has a wallet
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         415:
           description: Unsupported Media Type
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         500:
           description: Server Error
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /wallet/deposit:
     post:
@@ -221,16 +293,23 @@ paths:
       responses:
         200:
           description: Paystack Initialization Successful
-          schema:
-            $ref: '#/components/schemas/SuccessResponse'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepositResponse'
         415:
           description: Unsupported Media Type
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         500:
           description: Paystack Error
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /wallet/deposit/{reference}/status:
     get:
       summary: Get Deposit Status
@@ -253,7 +332,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuccessResponse'
+                $ref: '#/components/schemas/DepositStatusResponse'
         404:
           description: Transaction not found
           content:
@@ -300,24 +379,34 @@ paths:
       responses:
         200:
           description: Transfer Successful
-          schema:
-            $ref: '#/components/schemas/SuccessResponse'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
         400:
           description: Bad Request (Invalid PIN, Insufficient Balance)
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         404:
           description: Wallet not found
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         415:
           description: Unsupported Media Type
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         500:
           description: Transfer Failed
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /wallet:
     get:
@@ -331,12 +420,16 @@ paths:
       responses:
         200:
           description: Wallet Details Retrieved
-          schema:
-            $ref: '#/components/schemas/SuccessResponse'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WalletResponse'
         404:
           description: Wallet not found
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /wallet/balance:
     get:
@@ -350,12 +443,16 @@ paths:
       responses:
         200:
           description: Balance Retrieved
-          schema:
-            $ref: '#/components/schemas/SuccessResponse'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BalanceResponse'
         404:
           description: Wallet not found
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /wallet/transactions:
     get:
@@ -378,12 +475,16 @@ paths:
       responses:
         200:
           description: History Retrieved
-          schema:
-            $ref: '#/components/schemas/SuccessResponse'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionListResponse'
         404:
           description: Wallet not found
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /wallet/paystack/webhook:
     post:
@@ -489,9 +590,15 @@ components:
             type: string
             enum: [READ, DEPOSIT, WITHDRAWAL, TRANSFER]
           description: List of allowed permissions
+          example: ["READ", "DEPOSIT"]
         expiry:
           type: string
           enum: [1H, 1D, 1M, 1Y]
+          example: "1M"
+      example:
+        name: "Permission"
+        permissions: ["READ", "DEPOSIT", "TRANSFER"]
+        expiry: "1M"
 
     RolloverKeyRequest:
       type: object
@@ -519,6 +626,212 @@ components:
           properties:
             api_key:
               type: string
+            masked_key:
+              type: string
             expires_at:
               type: string
               format: date-time
+
+    SafeKey:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        masked_key:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+        expires_at:
+          type: string
+          format: date-time
+        is_revoked:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+
+    KeyListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: API Keys retrieved
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/SafeKey"
+
+    DepositData:
+      type: object
+      properties:
+        authorization_url:
+          type: string
+          example: "https://checkout.paystack.com/..."
+        access_code:
+          type: string
+          example: "0peioXd..."
+        reference:
+          type: string
+          example: "dep-123..."
+
+    DepositResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Deposit initialized
+        data:
+          $ref: "#/components/schemas/DepositData"
+
+    DepositStatusData:
+      type: object
+      properties:
+        reference:
+          type: string
+        status:
+          type: string
+          enum: [PENDING, SUCCESS, FAILED]
+        amount:
+          type: integer
+        paystack_status:
+          type: string
+        paystack_error:
+          type: string
+
+    DepositStatusResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Transaction status retrieved
+        data:
+          $ref: "#/components/schemas/DepositStatusData"
+
+    Wallet:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        wallet_number:
+          type: string
+        balance:
+          type: integer
+          format: int64
+        currency:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Transaction:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        wallet_id:
+          type: string
+          format: uuid
+        reference:
+          type: string
+        category:
+          type: string
+          enum: [DEPOSIT, WITHDRAWAL, TRANSFER]
+        type:
+          type: string
+          enum: [CREDIT, DEBIT]
+        amount:
+          type: integer
+          format: int64
+        status:
+          type: string
+          enum: [PENDING, SUCCESS, FAILED]
+        sender_wallet_number:
+          type: string
+        recipient_wallet_number:
+          type: string
+        description:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    WalletResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Wallet Details
+        data:
+          $ref: "#/components/schemas/Wallet"
+
+    BalanceResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Wallet Balance
+        data:
+          type: object
+          properties:
+            balance:
+              type: integer
+              format: int64
+
+    TransactionListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Transaction History
+        data:
+          type: object
+          properties:
+            transactions:
+              type: array
+              items:
+                $ref: "#/components/schemas/Transaction"
+            meta:
+              type: object
+              properties:
+                total_items:
+                  type: integer
+                total_pages:
+                  type: integer
+                current_page:
+                  type: integer
+                limit:
+                  type: integer
